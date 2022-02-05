@@ -1,0 +1,85 @@
+---
+title: "How Data can impact systems of a dying resource"
+author: "Sampson Zhao"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: bookdown::pdf_document2
+subtitle: "Bike Share Toronto Ridership for December 2021"
+abstract: "This report uses data collected by Bike Share Toronto to log the usage of the service throughout the city. Datasets are collected based on months of usage, and not throughout a fiscal year, creating some limitations, but this segregation can be helpful in investigating the division of resources and understanding how to alter service during off-peak seasons, like December. Results show that [...], which can be an indicator of the lack of use overall during a slow season, which can explain the lack of usage by casual users."
+thanks: "Code and data are available at: [...](...)."
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+### Preamble ###
+# purpose: read and discuss data from the December 2021 Bike Share Toronto Ridership
+# Author: Sampson Zhao
+# Contact: sampson.zhao@mail.utoronto.ca
+# Date: 2022-01-23
+
+#### Setup workspace ####
+# install.packages("opendatatoronto")
+# install.packages("tidyverse")
+# install.packages("ggplot2")
+# install.packages("knitr")
+
+library(tidyverse)
+library(opendatatoronto)
+library(ggplot2)
+library(knitr)
+```
+
+# Introduction
+Bike Share Toronto is a municipally managed bike sharing program that provides short term bike rentals to users to do short trips around Toronto. There are 625 stations around the city for users to pick up a bike either through a one-time use pass or an annual pass. Depending on the type of pass purchased by the user, rides usually last around 30-45 minutes, with varying fees after the allotted time. Users of the Annual pass are allowed unlimited 30 minute rides. Here we obtained data from the first 6 bikeshare stations in Toronto, during the month of December 2021.
+
+```{r}
+# Aquire Data #
+bikeshare_ridership <-
+  read_csv('https://ckan0.cf.opendata.inter.prod-toronto.ca/download_resource/543e93b0-4ba5-401d-baaf-61eb4249a5bf')
+
+# write_csv(bikeshare_ridership, 'bikeshare_ridership_data.csv')
+
+```
+
+```{r}
+# Clean Data #
+total_ridership <-
+  bikeshare_ridership |>
+  filter(`Start Station Id` %in% c('7000', '7001', '7002', '7003', '7004', '7005')) |>
+  select(-'Trip Id', -'Bike Id')|>
+  rename(StartID = 'Start Station Id')
+total_ridership$`User Type`
+
+total_ridership$StartID <-
+  recode(total_ridership$StartID,
+         '7000' = 'Fort York',
+         '7001' = 'Wellesley',
+         '7002' = 'St. George',
+         '7003' = 'Bloor St W',
+         '7004' = 'University Ave',
+         '7005' = 'King St W')
+
+total_ridership <-
+  mutate(c('Trip Duration'), as.integer)
+
+total_ridership <-
+  total_ridership |>
+  mutate(Long_Trip = if_else('Trip Duration' > n(900), 'Yes', 'No'))
+  
+total_ridership |>
+  ggplot(mapping = aes(x = StartID, fill = `User Type`)) + geom_bar(position="stack") +
+  labs(title = 'Number of rides in First 6 Toronto Bikeshare \n Stations in December 2021', x = 'Starting Station', y = 'Number of Riders') +
+  geom_text(stat='count', aes(label=after_stat(count)), vjust = 1)
+```
+
+BikeShare Toronto is a municipally managed bike sharing program that provides short term bike rentals to users to do short trips around Toronto. There are 625 stations around the city for users to pick up a bike either through a one-time use pass or an annual pass. Depending on the type of pass purchased by the user, rides usually last around 30-45 minutes, with varying fees after the allotted time. Users of the Annual pass are allowed unlimited 30 minute rides. Here we obtained data from the first 6 bikeshare stations in Toronto, during the month of December 2021.
+
+Open Data Toronto shares this information through their website https://open.toronto.ca/. We downloaded the data, then cleaned the dataset using R and R Studio.
+
+We found that the density of the area around particular stations have more riderships, even during the month of December, as seen by the higher density in the area of the station was highly related to the number of rides seen at those areas, such as the St. George Station, where there is a high density of residence buildings, where as closer to King St. West Station is mainly composed of corporate offices and Mall Spaces.
+
+These findings can support the focusing of the placement of the bikes, as higher density areas will more commonly run out of rental bikes during peak hours, hence by looking at the higher number of riderships at particular stations, predictions can be made to supplement peak hours, and moving bikes from lower density areas to higher density areas will help with the supply and demand of the bikes on a ridership level. This variable can also help with the prediction of construction and removal of stations, as this may help decide the popularity of the stations, as well as the usage, which will help decide whether a new station near by would be beneficial to the area.
+
+
+
